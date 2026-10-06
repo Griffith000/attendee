@@ -87,7 +87,7 @@ services:
     build: .
     image: attendee:latest
     restart: unless-stopped
-    entrypoint: []
+    entrypoint: null
     environment:
       DJANGO_SETTINGS_MODULE: attendee.settings.production
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
