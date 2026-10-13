@@ -607,6 +607,20 @@ class BotController:
         recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
         return f"{self.bot_in_db.object_id}-{recording.object_id}.{self.bot_in_db.recording_format()}"
 
+    def get_recording_storage_key(self):
+        """Object key used when uploading the default recording to S3/Azure.
+
+        If settings.RECORDING_FILE_PREFIX is set (e.g. "meeting-bots/"), the key becomes
+        "<prefix>/<bot_id>/<recording_id>.<format>". Otherwise it is identical to
+        get_recording_filename() ("<bot_id>-<recording_id>.<format>" at the bucket root).
+        The local temp file keeps the flat name so no directories need to exist on disk.
+        """
+        prefix = (getattr(settings, "RECORDING_FILE_PREFIX", "") or "").strip().strip("/")
+        if not prefix:
+            return self.get_recording_filename()
+        recording = Recording.objects.get(bot=self.bot_in_db, is_default_recording=True)
+        return f"{prefix}/{self.bot_in_db.object_id}/{recording.object_id}.{self.bot_in_db.recording_format()}"
+
     def on_rtmp_connection_failed(self):
         logger.info("RTMP connection failed")
         BotEventManager.create_event(
@@ -644,7 +658,7 @@ class BotController:
             logger.info(f"Uploading recording to external media storage bucket {self.bot_in_db.external_media_storage_bucket_name()}")
             file_uploader = S3FileUploader(
                 bucket=self.bot_in_db.external_media_storage_bucket_name(),
-                filename=self.bot_in_db.external_media_storage_recording_file_name() or self.get_recording_filename(),
+                filename=self.bot_in_db.external_media_storage_recording_file_name() or self.get_recording_storage_key(),
                 endpoint_url=external_media_storage_credentials.get("endpoint_url") or None,
                 region_name=external_media_storage_credentials.get("region_name"),
                 access_key_id=external_media_storage_credentials.get("access_key_id"),
@@ -660,7 +674,7 @@ class BotController:
         if settings.STORAGE_PROTOCOL == "azure":
             return AzureFileUploader(
                 container=settings.AZURE_RECORDING_STORAGE_CONTAINER_NAME,
-                filename=self.get_recording_filename(),
+                filename=self.get_recording_storage_key(),
                 connection_string=settings.RECORDING_STORAGE_BACKEND.get("OPTIONS").get("connection_string"),
                 account_key=settings.RECORDING_STORAGE_BACKEND.get("OPTIONS").get("account_key"),
                 account_name=settings.RECORDING_STORAGE_BACKEND.get("OPTIONS").get("account_name"),
@@ -668,7 +682,7 @@ class BotController:
 
         return S3FileUploader(
             bucket=settings.AWS_RECORDING_STORAGE_BUCKET_NAME,
-            filename=self.get_recording_filename(),
+            filename=self.get_recording_storage_key(),
             endpoint_url=settings.RECORDING_STORAGE_BACKEND.get("OPTIONS").get("endpoint_url"),
         )
 
