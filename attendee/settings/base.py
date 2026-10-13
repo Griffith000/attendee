@@ -290,6 +290,8 @@ LOG_HANDLER_NAMES = list(LOG_HANDLERS)
 STORAGE_PROTOCOL = os.getenv("STORAGE_PROTOCOL", "s3")
 AWS_RECORDING_STORAGE_BUCKET_NAME = os.getenv("AWS_RECORDING_STORAGE_BUCKET_NAME")
 AZURE_RECORDING_STORAGE_CONTAINER_NAME = os.getenv("AZURE_RECORDING_STORAGE_CONTAINER_NAME")
+# Optional key prefix for default recording uploads, e.g. "meeting-bots/" -> meeting-bots/<bot_id>/<recording_id>.<ext>
+RECORDING_FILE_PREFIX = os.getenv("RECORDING_FILE_PREFIX", "")
 
 # Audio chunk storage settings
 USE_REMOTE_STORAGE_FOR_AUDIO_CHUNKS = os.getenv("USE_REMOTE_STORAGE_FOR_AUDIO_CHUNKS", "false") == "true"
